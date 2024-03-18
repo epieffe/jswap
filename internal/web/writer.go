@@ -26,5 +26,8 @@ func (prog *progress) Write(p []byte) (int, error) {
 	prog.written += int64(n)
 	percent := float64(prog.written) / float64(prog.total) * 100
 	fmt.Printf("\rDownloading %s (%.2f%%)", prog.name, percent)
+	if prog.written == prog.total {
+		fmt.Println()
+	}
 	return n, nil
 }

@@ -2,18 +2,20 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/epiefe/jswap/internal/adoptium"
 )
 
 func main() {
+	//availableReleases()
 	downloadRelease(21)
 }
 
 func availableReleases() {
 	releases, err := adoptium.AvailableReleases()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
 	}
 	for _, release := range releases {
@@ -24,7 +26,7 @@ func availableReleases() {
 func downloadRelease(release int) {
 	err := adoptium.DownloadRelease(release)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
 	}
 }

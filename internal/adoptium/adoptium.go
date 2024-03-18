@@ -1,12 +1,15 @@
 package adoptium
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 
+	"github.com/epiefe/jswap/internal/file"
 	"github.com/epiefe/jswap/internal/web"
 )
 
@@ -36,6 +39,8 @@ func DownloadRelease(version int) error {
 		"%s/assets/latest/%d/hotspot?architecture=x64&image_type=jre&os=%s&vendor=eclipse",
 		api, version, runtime.GOOS,
 	)
+	// Get latest release info from api
+	fmt.Printf("Searching latest JDK %d release for %s %s\n", version, runtime.GOOS, runtime.GOARCH)
 	assets, err := web.FetchJson[[]asset](url)
 	if err != nil {
 		return err
@@ -44,15 +49,44 @@ func DownloadRelease(version int) error {
 		return fmt.Errorf("no assets available for release %d", version)
 	}
 	asset := (*assets)[0]
+	fmt.Printf("Found release %s\n", asset.ReleaseName)
 
-	home, err := os.UserHomeDir()
+	// Download latest release archive
+	cacheDir := file.CacheDir()
+	defer os.RemoveAll(cacheDir)
+	downloadPath := filepath.Join(cacheDir, "archive", asset.Binary.Package.Name)
+	err = web.DownloadFile(asset.Binary.Package.Link, downloadPath)
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(home, ".jswap", "adoptium", asset.Binary.Package.Name)
-	err = web.DownloadFile(asset.Binary.Package.Link, path)
+
+	// Extract archive
+	fmt.Println("Extracting archive...")
+	extractDir := filepath.Join(cacheDir, "extracted")
+	err = file.ExtractArchive(downloadPath, extractDir)
 	if err != nil {
 		return err
 	}
+	entries, err := os.ReadDir(extractDir)
+	if err != nil {
+		return err
+	}
+	if len(entries) != 1 || !entries[0].IsDir() {
+		return errors.New("unexpected archive structure")
+	}
+	jdkPath := filepath.Join(extractDir, entries[0].Name())
+
+	// Move extracted jdk to jswap folder
+	dir := filepath.Join(file.JswapDir(), "jdk", "adoptium")
+	err = os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	err = os.Rename(jdkPath, filepath.Join(dir, strconv.Itoa(version)))
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("JDK %d installed successfully!\n", version)
 	return nil
 }
