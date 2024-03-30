@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
-	"strconv"
 
 	"github.com/epiefe/jswap/internal/file"
 	"github.com/epiefe/jswap/internal/web"
@@ -34,28 +33,36 @@ func AvailableReleases() ([]string, error) {
 }
 
 // Downloads the latest JDK build for a specific release
-func DownloadRelease(version int) error {
+func DownloadRelease(release int) error {
 	url := fmt.Sprintf(
 		"%s/assets/latest/%d/hotspot?architecture=x64&image_type=jre&os=%s&vendor=eclipse",
-		api, version, runtime.GOOS,
+		api, release, runtime.GOOS,
 	)
 	// Get latest release info from api
-	fmt.Printf("Searching latest JDK %d release for %s %s\n", version, runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("Searching latest JDK %d for %s %s\n", release, runtime.GOOS, runtime.GOARCH)
 	assets, err := web.FetchJson[[]asset](url)
 	if err != nil {
 		return err
 	}
 	if len(*assets) == 0 {
-		return fmt.Errorf("no assets available for release %d", version)
+		return fmt.Errorf("no assets available for release %d", release)
 	}
 	asset := (*assets)[0]
 	fmt.Printf("Found release %s\n", asset.ReleaseName)
 
+	// Download and install
+	if err := getFromLink(asset.Binary.Package.Link); err != nil {
+		return err
+	}
+	fmt.Printf("Successfully installed JDK %s\n", asset.Version.Semver)
+	return nil
+}
+
+func getFromLink(link string) error {
 	// Download latest release archive
 	cacheDir := file.CacheDir()
 	defer os.RemoveAll(cacheDir)
-	downloadPath := filepath.Join(cacheDir, "archive", asset.Binary.Package.Name)
-	err = web.DownloadFile(asset.Binary.Package.Link, downloadPath)
+	archive, err := web.DownloadFile(link, filepath.Join(cacheDir, "archive"))
 	if err != nil {
 		return err
 	}
@@ -63,8 +70,7 @@ func DownloadRelease(version int) error {
 	// Extract archive
 	fmt.Println("Extracting archive...")
 	extractDir := filepath.Join(cacheDir, "extracted")
-	err = file.ExtractArchive(downloadPath, extractDir)
-	if err != nil {
+	if err := file.ExtractArchive(archive, extractDir); err != nil {
 		return err
 	}
 	entries, err := os.ReadDir(extractDir)
@@ -74,19 +80,24 @@ func DownloadRelease(version int) error {
 	if len(entries) != 1 || !entries[0].IsDir() {
 		return errors.New("unexpected archive structure")
 	}
-	jdkPath := filepath.Join(extractDir, entries[0].Name())
+	version := entries[0].Name()
+	extractedPath := filepath.Join(extractDir, version)
 
-	// Move extracted jdk to jswap folder
-	dir := filepath.Join(file.JswapDir(), "jdk", "adoptium")
-	err = os.MkdirAll(dir, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	err = os.Rename(jdkPath, filepath.Join(dir, strconv.Itoa(version)))
-	if err != nil {
+	// Create adoptium folder if it does not exists
+	jdkDir := filepath.Join(file.JswapDir(), "jdk", "adoptium")
+	if err = os.MkdirAll(jdkDir, os.ModePerm); err != nil {
 		return err
 	}
 
-	fmt.Printf("JDK %d installed successfully!\n", version)
+	// Eventually remove pre-existing jdk with same version
+	jdkPath := filepath.Join(jdkDir, version)
+	if err = os.RemoveAll(jdkPath); err != nil {
+		return err
+	}
+
+	// Move extracted jdk to adoptium folder
+	if err = os.Rename(extractedPath, jdkPath); err != nil {
+		return err
+	}
 	return nil
 }
