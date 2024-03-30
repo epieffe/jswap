@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 
+	"github.com/epiefe/jswap/internal/adoptium/system"
 	"github.com/epiefe/jswap/internal/file"
 	"github.com/epiefe/jswap/internal/web"
 )
@@ -33,13 +33,10 @@ func AvailableReleases() ([]string, error) {
 }
 
 // Downloads the latest JDK build for a specific release
-func DownloadRelease(release int) error {
-	url := fmt.Sprintf(
-		"%s/assets/latest/%d/hotspot?architecture=x64&image_type=jre&os=%s&vendor=eclipse",
-		api, release, runtime.GOOS,
-	)
+func DownloadLatest(release int) error {
 	// Get latest release info from api
-	fmt.Printf("Searching latest JDK %d for %s %s\n", release, runtime.GOOS, runtime.GOARCH)
+	fmt.Printf("Searching latest JDK %d for %s %s\n", release, system.OS, system.ARCH)
+	url := fmt.Sprintf("%s/assets/latest/%d/hotspot?architecture=%s&image_type=jre&os=%s&vendor=eclipse", api, release, system.ARCH, system.OS)
 	assets, err := web.FetchJson[[]asset](url)
 	if err != nil {
 		return err
@@ -54,7 +51,24 @@ func DownloadRelease(release int) error {
 	if err := getFromLink(asset.Binary.Package.Link); err != nil {
 		return err
 	}
-	fmt.Printf("Successfully installed JDK %s\n", asset.Version.Semver)
+	return nil
+}
+
+// Downloads a specific JDK version
+func DownloadVersion(version string) error {
+	// Get release version info from api
+	url := fmt.Sprintf("%s/assets/release_name/eclipse/%s?architecture=%s&image_type=jre&os=%s", api, version, system.ARCH, system.OS)
+	release, err := web.FetchJson[release](url)
+	if err != nil {
+		return err
+	}
+	if len(release.Binaries) == 0 {
+		return fmt.Errorf("no binaries available for %s", version)
+	}
+	// Download and install
+	if err := getFromLink(release.Binaries[0].Package.Link); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -80,8 +94,8 @@ func getFromLink(link string) error {
 	if len(entries) != 1 || !entries[0].IsDir() {
 		return errors.New("unexpected archive structure")
 	}
-	version := entries[0].Name()
-	extractedPath := filepath.Join(extractDir, version)
+	name := entries[0].Name()
+	extractedPath := filepath.Join(extractDir, name)
 
 	// Create adoptium folder if it does not exists
 	jdkDir := filepath.Join(file.JswapDir(), "jdk", "adoptium")
@@ -90,7 +104,7 @@ func getFromLink(link string) error {
 	}
 
 	// Eventually remove pre-existing jdk with same version
-	jdkPath := filepath.Join(jdkDir, version)
+	jdkPath := filepath.Join(jdkDir, name)
 	if err = os.RemoveAll(jdkPath); err != nil {
 		return err
 	}
@@ -99,5 +113,6 @@ func getFromLink(link string) error {
 	if err = os.Rename(extractedPath, jdkPath); err != nil {
 		return err
 	}
+	fmt.Printf("Successfully installed %s\n", name)
 	return nil
 }

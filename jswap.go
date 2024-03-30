@@ -9,7 +9,8 @@ import (
 
 func main() {
 	//availableReleases()
-	downloadRelease(21)
+	//downloadRelease(21)
+	downloadVersion("jdk8u402-b06")
 }
 
 func availableReleases() {
@@ -24,8 +25,14 @@ func availableReleases() {
 }
 
 func downloadRelease(release int) {
-	err := adoptium.DownloadRelease(release)
-	if err != nil {
+	if err := adoptium.DownloadLatest(release); err != nil {
+		fmt.Fprintln(os.Stderr, "Error:", err)
+		return
+	}
+}
+
+func downloadVersion(version string) {
+	if err := adoptium.DownloadVersion(version); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
 	}
