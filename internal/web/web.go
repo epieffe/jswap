@@ -12,24 +12,24 @@ import (
 )
 
 // Fetches JSON data from an url and deserializes response.
-func FetchJson[T any](url string) (*T, error) {
+func FetchJson[T any](url string) (*T, http.Header, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP response status error: %s", resp.Status)
+		return nil, resp.Header, fmt.Errorf("http response status %s", resp.Status)
 	}
 
 	var result T
 	err = json.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
-		return nil, err
+		return nil, resp.Header, err
 	}
 
-	return &result, nil
+	return &result, resp.Header, nil
 }
 
 func DownloadFile(url string, directory string) (string, error) {

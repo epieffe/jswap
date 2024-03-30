@@ -8,19 +8,15 @@ import (
 )
 
 func main() {
-	//availableReleases()
+	printVersions(33)
 	//downloadRelease(21)
-	downloadVersion("jdk8u402-b06")
+	//downloadVersion("jdk8u402-b06")
 }
 
-func availableReleases() {
-	releases, err := adoptium.AvailableReleases()
-	if err != nil {
+func printVersions(release int) {
+	if err := adoptium.PrintRemoteVersions(release); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
 		return
-	}
-	for _, release := range releases {
-		fmt.Println(release)
 	}
 }
 

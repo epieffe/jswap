@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/epiefe/jswap/internal/adoptium/system"
 	"github.com/epiefe/jswap/internal/file"
@@ -17,7 +18,7 @@ const api = "https://api.adoptium.net/v3"
 // Fetches available Java releases from Eclipse Temurin.
 func AvailableReleases() ([]string, error) {
 	url := api + "/info/available_releases"
-	available, err := web.FetchJson[availableReleases](url)
+	available, _, err := web.FetchJson[availableReleases](url)
 	if err != nil {
 		return nil, err
 	}
@@ -32,12 +33,41 @@ func AvailableReleases() ([]string, error) {
 	return result, nil
 }
 
+// Prints available versions for a specific release. If release is 0,
+// then prints available versions for every release.
+func PrintRemoteVersions(release int) error {
+	page := 0
+	next := true
+	for next {
+		url := fmt.Sprintf(
+			"%s/info/release_names?architecture=%s&image_type=jre&os=%s&page=%d&page_size=20&release_type=ga&sort_method=DEFAULT&sort_order=ASC&vendor=eclipse",
+			api, system.ARCH, system.OS, page,
+		)
+		if release > 0 {
+			url += fmt.Sprintf("&version=[%d,%d)", release, release+1)
+		}
+		result, headers, err := web.FetchJson[versions](url)
+		if err != nil {
+			return err
+		}
+		for _, version := range result.Releases {
+			fmt.Println(version)
+		}
+		next = strings.Contains(headers.Get("link"), "rel=\"next\"")
+		page += 1
+	}
+	if page == 0 {
+		fmt.Println("            N/A")
+	}
+	return nil
+}
+
 // Downloads the latest JDK build for a specific release
 func DownloadLatest(release int) error {
 	// Get latest release info from api
 	fmt.Printf("Searching latest JDK %d for %s %s\n", release, system.OS, system.ARCH)
 	url := fmt.Sprintf("%s/assets/latest/%d/hotspot?architecture=%s&image_type=jre&os=%s&vendor=eclipse", api, release, system.ARCH, system.OS)
-	assets, err := web.FetchJson[[]asset](url)
+	assets, _, err := web.FetchJson[[]asset](url)
 	if err != nil {
 		return err
 	}
@@ -58,7 +88,7 @@ func DownloadLatest(release int) error {
 func DownloadVersion(version string) error {
 	// Get release version info from api
 	url := fmt.Sprintf("%s/assets/release_name/eclipse/%s?architecture=%s&image_type=jre&os=%s", api, version, system.ARCH, system.OS)
-	release, err := web.FetchJson[release](url)
+	release, _, err := web.FetchJson[release](url)
 	if err != nil {
 		return err
 	}

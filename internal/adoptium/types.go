@@ -7,6 +7,10 @@ type availableReleases struct {
 	MostRecentRelease int   `json:"most_recent_feature_release"`
 }
 
+type versions struct {
+	Releases []string `json:"releases"`
+}
+
 type release struct {
 	Binaries      []binary `json:"binaries"`
 	DownloadCount int      `json:"download_count"`
