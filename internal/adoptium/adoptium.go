@@ -10,6 +10,7 @@ import (
 
 	"github.com/epiefe/jswap/internal/adoptium/system"
 	"github.com/epiefe/jswap/internal/file"
+	"github.com/epiefe/jswap/internal/util"
 	"github.com/epiefe/jswap/internal/web"
 )
 
@@ -78,7 +79,18 @@ func DownloadLatest(release int) error {
 	fmt.Printf("Found release %s\n", asset.ReleaseName)
 
 	// Download and install
-	if err := getFromLink(asset.Binary.Package.Link); err != nil {
+	path, err := getFromLink(asset.Binary.Package.Link)
+	if err != nil {
+		return err
+	}
+	// Update jswap.json file
+	if err = util.StoreJDKConfig(util.JDKInfo{
+		Vendor:      "adoptium",
+		Major:       asset.Version.Major,
+		Release:     asset.ReleaseName,
+		ReleaseDate: asset.Binary.UpdatedAt,
+		Path:        path,
+	}); err != nil {
 		return err
 	}
 	return nil
@@ -96,53 +108,64 @@ func DownloadVersion(version string) error {
 		return fmt.Errorf("no binaries available for %s", version)
 	}
 	// Download and install
-	if err := getFromLink(release.Binaries[0].Package.Link); err != nil {
+	path, err := getFromLink(release.Binaries[0].Package.Link)
+	if err != nil {
+		return err
+	}
+	// Update jswap.json file
+	if err = util.StoreJDKConfig(util.JDKInfo{
+		Vendor:      "adoptium",
+		Major:       release.VersionData.Major,
+		Release:     version,
+		ReleaseDate: release.Binaries[0].UpdatedAt,
+		Path:        path,
+	}); err != nil {
 		return err
 	}
 	return nil
 }
 
-func getFromLink(link string) error {
+func getFromLink(link string) (string, error) {
 	// Download latest release archive
 	cacheDir := file.CacheDir()
 	defer os.RemoveAll(cacheDir)
 	archive, err := web.DownloadFile(link, filepath.Join(cacheDir, "archive"))
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// Extract archive
 	fmt.Println("Extracting archive...")
 	extractDir := filepath.Join(cacheDir, "extracted")
 	if err := file.ExtractArchive(archive, extractDir); err != nil {
-		return err
+		return "", err
 	}
 	entries, err := os.ReadDir(extractDir)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if len(entries) != 1 || !entries[0].IsDir() {
-		return errors.New("unexpected archive structure")
+		return "", errors.New("unexpected archive structure")
 	}
 	name := entries[0].Name()
 	extractedPath := filepath.Join(extractDir, name)
 
-	// Create adoptium folder if it does not exists
+	// Create adoptium folder if it does not exist
 	jdkDir := filepath.Join(file.JswapDir(), "jdk", "adoptium")
 	if err = os.MkdirAll(jdkDir, os.ModePerm); err != nil {
-		return err
+		return "", err
 	}
 
-	// Eventually remove pre-existing jdk with same version
+	// Eventually remove pre-existing folder in same path
 	jdkPath := filepath.Join(jdkDir, name)
 	if err = os.RemoveAll(jdkPath); err != nil {
-		return err
+		return "", err
 	}
 
 	// Move extracted jdk to adoptium folder
 	if err = os.Rename(extractedPath, jdkPath); err != nil {
-		return err
+		return "", err
 	}
 	fmt.Printf("Successfully installed %s\n", name)
-	return nil
+	return jdkPath, nil
 }
