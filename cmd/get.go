@@ -12,7 +12,8 @@ var getCmd = &cobra.Command{
 	Short: "Download and install a JDK",
 	Long: "Download and install a JDK. If <version> is a release number (e.g., 21) downloads the latest available version for that release, " +
 		"otherwise <version> must be a specific version name. Use 'jswap versions' to see all the available version names.",
-	Args: cobra.ExactArgs(1),
+	Args:    cobra.ExactArgs(1),
+	Example: "  jswap get 21\n" + "  jswap get jdk-21.0.2+13",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		release, err := strconv.Atoi(args[0])
 		if err != nil {
