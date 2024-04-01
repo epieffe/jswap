@@ -57,7 +57,7 @@ func StoreJDKConfig(jdk JDKInfo) error {
 }
 
 func ReadJswapConfig() (*JswapConfig, error) {
-	file, err := os.Open(filepath.Join(file.JswapDir(), "jswap.json"))
+	file, err := os.Open(filepath.Join(file.JswapHome(), "jswap.json"))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return defaultConfig(), nil
@@ -75,7 +75,7 @@ func ReadJswapConfig() (*JswapConfig, error) {
 }
 
 func WriteJswapConfig(config *JswapConfig) error {
-	file, err := os.Create(filepath.Join(file.JswapDir(), "jswap.json"))
+	file, err := os.Create(filepath.Join(file.JswapHome(), "jswap.json"))
 	if err != nil {
 		return err
 	}

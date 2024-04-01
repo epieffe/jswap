@@ -159,7 +159,7 @@ func getFromLink(link string) (string, error) {
 	extractedPath := filepath.Join(extractDir, name)
 
 	// Create adoptium folder if it does not exist
-	jdkDir := filepath.Join(file.JswapDir(), "jdks", "adoptium")
+	jdkDir := filepath.Join(file.JswapHome(), "jdks", "adoptium")
 	if err = os.MkdirAll(jdkDir, os.ModePerm); err != nil {
 		return "", err
 	}
