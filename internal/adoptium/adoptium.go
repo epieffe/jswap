@@ -16,27 +16,30 @@ import (
 
 const api = "https://api.adoptium.net/v3"
 
-// Fetches available Java releases from Eclipse Temurin.
-func AvailableReleases() ([]string, error) {
-	url := api + "/info/available_releases"
-	available, _, err := web.FetchJson[availableReleases](url)
+func PrintLocalReleases(major int) error {
+	config, err := util.ReadJswapConfig()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	result := make([]string, len(available.Releases))
-	for i, v := range available.Releases {
-		if slices.Contains(available.LTS, v) {
-			result[i] = fmt.Sprintf("Adoptium JDK %d - LTS", v)
-		} else {
-			result[i] = fmt.Sprintf("Adoptium JDK %d", v)
-		}
+	if major > 0 {
+		config.JDKs = slices.DeleteFunc(config.JDKs, func(jdk util.JDKInfo) bool { return jdk.Major != major })
 	}
-	return result, nil
+	for _, jdk := range config.JDKs {
+		fmt.Println(jdk.Release)
+	}
+	if len(config.JDKs) == 0 {
+		fmt.Println("            N/A")
+	}
+	return nil
 }
 
-// Prints available versions for a specific release. If release is 0,
-// then prints available versions for every release.
-func PrintRemoteVersions(release int) error {
+// Prints available releases for a specific major. If major is 0,
+// then prints every available release.
+func PrintRemoteReleases(major int) error {
+	config, err := util.ReadJswapConfig()
+	if err != nil {
+		return err
+	}
 	page := 0
 	next := true
 	for next {
@@ -44,15 +47,18 @@ func PrintRemoteVersions(release int) error {
 			"%s/info/release_names?architecture=%s&image_type=jre&os=%s&page=%d&page_size=20&release_type=ga&sort_method=DEFAULT&sort_order=ASC&vendor=eclipse",
 			api, system.ARCH, system.OS, page,
 		)
-		if release > 0 {
-			url += fmt.Sprintf("&version=[%d,%d)", release, release+1)
+		if major > 0 {
+			url += fmt.Sprintf("&version=[%d,%d)", major, major+1)
 		}
-		result, headers, err := web.FetchJson[versions](url)
+		result, headers, err := web.FetchJson[releases](url)
 		if err != nil {
 			return err
 		}
-		for _, version := range result.Releases {
-			fmt.Println(version)
+		for _, release := range result.Releases {
+			if slices.ContainsFunc(config.JDKs, func(jdk util.JDKInfo) bool { return jdk.Release == release }) {
+				release += " [installed]"
+			}
+			fmt.Println(release)
 		}
 		next = strings.Contains(headers.Get("link"), "rel=\"next\"")
 		page += 1
@@ -63,17 +69,17 @@ func PrintRemoteVersions(release int) error {
 	return nil
 }
 
-// Downloads the latest JDK build for a specific release
-func DownloadLatest(release int) error {
+// Downloads the latest JDK release for a specific major
+func DownloadLatestRelease(major int) error {
 	// Get latest release info from api
-	fmt.Printf("Searching latest JDK %d for %s %s\n", release, system.OS, system.ARCH)
-	url := fmt.Sprintf("%s/assets/latest/%d/hotspot?architecture=%s&image_type=jre&os=%s&vendor=eclipse", api, release, system.ARCH, system.OS)
+	fmt.Printf("Searching latest JDK %d for %s %s\n", major, system.OS, system.ARCH)
+	url := fmt.Sprintf("%s/assets/latest/%d/hotspot?architecture=%s&image_type=jre&os=%s&vendor=eclipse", api, major, system.ARCH, system.OS)
 	assets, _, err := web.FetchJson[[]asset](url)
 	if err != nil {
 		return err
 	}
 	if len(*assets) == 0 {
-		return fmt.Errorf("no assets available for release %d", release)
+		return fmt.Errorf("no assets available for major %d", major)
 	}
 	asset := (*assets)[0]
 	fmt.Printf("Found release %s\n", asset.ReleaseName)
@@ -93,19 +99,20 @@ func DownloadLatest(release int) error {
 	}); err != nil {
 		return err
 	}
+	fmt.Printf("Successfully installed %s\n", asset.ReleaseName)
 	return nil
 }
 
-// Downloads a specific JDK version
-func DownloadVersion(version string) error {
-	// Get release version info from api
-	url := fmt.Sprintf("%s/assets/release_name/eclipse/%s?architecture=%s&image_type=jre&os=%s", api, version, system.ARCH, system.OS)
+// Downloads a specific JDK release
+func DownloadRelease(name string) error {
+	// Get release info from api
+	url := fmt.Sprintf("%s/assets/release_name/eclipse/%s?architecture=%s&image_type=jre&os=%s", api, name, system.ARCH, system.OS)
 	release, _, err := web.FetchJson[release](url)
 	if err != nil {
 		return err
 	}
 	if len(release.Binaries) == 0 {
-		return fmt.Errorf("no binaries available for %s", version)
+		return fmt.Errorf("no binaries available for %s", name)
 	}
 	// Download and install
 	path, err := getFromLink(release.Binaries[0].Package.Link)
@@ -116,17 +123,18 @@ func DownloadVersion(version string) error {
 	if err = util.StoreJDKConfig(util.JDKInfo{
 		Vendor:      "adoptium",
 		Major:       release.VersionData.Major,
-		Release:     version,
+		Release:     name,
 		ReleaseDate: release.Binaries[0].UpdatedAt,
 		Path:        path,
 	}); err != nil {
 		return err
 	}
+	fmt.Printf("Successfully installed %s\n", name)
 	return nil
 }
 
 func getFromLink(link string) (string, error) {
-	// Download latest release archive
+	// Download release archive
 	cacheDir := file.CacheDir()
 	defer os.RemoveAll(cacheDir)
 	archive, err := web.DownloadFile(link, filepath.Join(cacheDir, "archive"))
@@ -151,7 +159,7 @@ func getFromLink(link string) (string, error) {
 	extractedPath := filepath.Join(extractDir, name)
 
 	// Create adoptium folder if it does not exist
-	jdkDir := filepath.Join(file.JswapDir(), "jdk", "adoptium")
+	jdkDir := filepath.Join(file.JswapDir(), "jdks", "adoptium")
 	if err = os.MkdirAll(jdkDir, os.ModePerm); err != nil {
 		return "", err
 	}
@@ -166,6 +174,5 @@ func getFromLink(link string) (string, error) {
 	if err = os.Rename(extractedPath, jdkPath); err != nil {
 		return "", err
 	}
-	fmt.Printf("Successfully installed %s\n", name)
 	return jdkPath, nil
 }

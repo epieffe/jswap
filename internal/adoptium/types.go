@@ -1,13 +1,6 @@
 package adoptium
 
-type availableReleases struct {
-	Releases          []int `json:"available_releases"`
-	LTS               []int `json:"available_lts_releases"`
-	MostRecentLTS     int   `json:"most_recent_lts"`
-	MostRecentRelease int   `json:"most_recent_feature_release"`
-}
-
-type versions struct {
+type releases struct {
 	Releases []string `json:"releases"`
 }
 

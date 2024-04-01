@@ -9,7 +9,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "jswap [<command>] [<flags>]",
-	Short: "Download and manage multiple JDK versions.",
+	Short: "Download and manage multiple JDK releases.",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
@@ -28,7 +28,7 @@ func init() {
 
 	rootCmd.SetUsageTemplate(USAGE_TEMPLATE)
 
-	rootCmd.AddCommand(lsRemoteCmd, getCmd)
+	rootCmd.AddCommand(lsCmd, releasesCmd, getCmd)
 	disableFlagsInUseline(rootCmd)
 }
 
