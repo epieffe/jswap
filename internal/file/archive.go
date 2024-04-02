@@ -20,27 +20,6 @@ func ExtractArchive(path string, dest string) error {
 	return fmt.Errorf("file %s is not a valid archive", path)
 }
 
-func CacheDir() string {
-	dir, err := os.UserCacheDir()
-	if err != nil {
-		dir = filepath.Join(JswapHome(), ".cache")
-	}
-	return filepath.Join(dir, "jswap")
-}
-
-func JavaHome() string {
-	return filepath.Join(JswapHome(), "current-jdk")
-}
-
-func JswapHome() string {
-	dir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s\n", err)
-		os.Exit(1)
-	}
-	return filepath.Join(dir, ".jswap")
-}
-
 func unzip(src string, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
