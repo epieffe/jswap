@@ -3,7 +3,7 @@ package cmd
 import (
 	"strconv"
 
-	"github.com/epiefe/jswap/internal/jdk/adoptium"
+	"github.com/epiefe/jswap/internal/jdk"
 	"github.com/spf13/cobra"
 )
 
@@ -17,12 +17,12 @@ var getCmd = &cobra.Command{
 		major, err := strconv.Atoi(args[0])
 		if err != nil {
 			// arg is a release name
-			if err := adoptium.DownloadRelease(args[0]); err != nil {
+			if err := jdk.GetRelease(args[0]); err != nil {
 				return err
 			}
 		} else {
 			// arg is a major integer
-			if err := adoptium.DownloadLatestRelease(major); err != nil {
+			if err := jdk.GetLatest(major); err != nil {
 				return err
 			}
 		}

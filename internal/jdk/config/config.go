@@ -1,4 +1,4 @@
-package jdk
+package config
 
 import (
 	"encoding/json"
@@ -12,7 +12,8 @@ import (
 )
 
 type JswapConfig struct {
-	JDKs []JDKInfo `json:"jdks"`
+	CurrentJDK *JDKInfo   `json:"currentJDK"`
+	JDKs       []*JDKInfo `json:"jdks"`
 }
 
 type JDKInfo struct {
@@ -23,37 +24,25 @@ type JDKInfo struct {
 	Path        string `json:"path"`
 }
 
-func (config *JswapConfig) AddJDK(info JDKInfo) {
-	conflict := slices.ContainsFunc(config.JDKs, func(e JDKInfo) bool { return e.Release == info.Release })
+func (config *JswapConfig) AddJDK(info *JDKInfo) {
+	conflict := slices.ContainsFunc(config.JDKs, func(e *JDKInfo) bool { return e.Release == info.Release })
 	if conflict {
 		fmt.Fprintf(os.Stderr, "Warning: release %s was already installed and this will override previous configuration\n", info.Release)
-		config.JDKs = slices.DeleteFunc(config.JDKs, func(e JDKInfo) bool { return e.Release == info.Release })
+		config.JDKs = slices.DeleteFunc(config.JDKs, func(e *JDKInfo) bool { return e.Release == info.Release })
 	}
 	config.JDKs = append(config.JDKs, info)
 }
 
 func (config *JswapConfig) RemoveJDK(release string) {
 	oldLen := len(config.JDKs)
-	config.JDKs = slices.DeleteFunc(config.JDKs, func(e JDKInfo) bool { return e.Release == release })
+	config.JDKs = slices.DeleteFunc(config.JDKs, func(e *JDKInfo) bool { return e.Release == release })
 	if oldLen == len(config.JDKs) {
 		fmt.Fprintf(os.Stderr, "Warning: attempted to remove release %s but was not found\n", release)
 	}
 }
 
 func defaultConfig() *JswapConfig {
-	return &JswapConfig{JDKs: []JDKInfo{}}
-}
-
-func StoreJDKConfig(jdk JDKInfo) error {
-	config, err := ReadJswapConfig()
-	if err != nil {
-		return err
-	}
-	config.AddJDK(jdk)
-	if err = WriteJswapConfig(config); err != nil {
-		return err
-	}
-	return nil
+	return &JswapConfig{JDKs: []*JDKInfo{}}
 }
 
 func ReadJswapConfig() (*JswapConfig, error) {

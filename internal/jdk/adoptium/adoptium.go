@@ -9,25 +9,25 @@ import (
 	"strings"
 
 	"github.com/epiefe/jswap/internal/file"
-	"github.com/epiefe/jswap/internal/jdk"
 	"github.com/epiefe/jswap/internal/jdk/adoptium/system"
+	"github.com/epiefe/jswap/internal/jdk/config"
 	"github.com/epiefe/jswap/internal/web"
 )
 
 const api = "https://api.adoptium.net/v3"
 
 func PrintLocalReleases(major int) error {
-	config, err := jdk.ReadJswapConfig()
+	conf, err := config.ReadJswapConfig()
 	if err != nil {
 		return err
 	}
 	if major > 0 {
-		config.JDKs = slices.DeleteFunc(config.JDKs, func(info jdk.JDKInfo) bool { return info.Major != major })
+		conf.JDKs = slices.DeleteFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Major != major })
 	}
-	for _, info := range config.JDKs {
+	for _, info := range conf.JDKs {
 		fmt.Println(info.Release)
 	}
-	if len(config.JDKs) == 0 {
+	if len(conf.JDKs) == 0 {
 		fmt.Println("            N/A")
 	}
 	return nil
@@ -36,7 +36,7 @@ func PrintLocalReleases(major int) error {
 // Prints available releases for a specific major. If major is 0,
 // then prints every available release.
 func PrintRemoteReleases(major int) error {
-	config, err := jdk.ReadJswapConfig()
+	conf, err := config.ReadJswapConfig()
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func PrintRemoteReleases(major int) error {
 			return err
 		}
 		for _, release := range result.Releases {
-			if slices.ContainsFunc(config.JDKs, func(info jdk.JDKInfo) bool { return info.Release == release }) {
+			if slices.ContainsFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Release == release }) {
 				release += " [installed]"
 			}
 			fmt.Println(release)
@@ -69,17 +69,18 @@ func PrintRemoteReleases(major int) error {
 	return nil
 }
 
-// Downloads the latest JDK release for a specific major
-func DownloadLatestRelease(major int) error {
+// DownloadLatestRelease downloads the latest JDK release for a specific major
+// and returns info about the downloaded JDK.
+func DownloadLatestRelease(major int) (*config.JDKInfo, error) {
 	// Get latest release info from api
 	fmt.Printf("Searching latest JDK %d for %s %s\n", major, system.OS, system.ARCH)
 	url := fmt.Sprintf("%s/assets/latest/%d/hotspot?architecture=%s&image_type=jre&os=%s&vendor=eclipse", api, major, system.ARCH, system.OS)
 	assets, _, err := web.FetchJson[[]asset](url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(*assets) == 0 {
-		return fmt.Errorf("no assets available for major %d", major)
+		return nil, fmt.Errorf("no assets available for major %d", major)
 	}
 	asset := (*assets)[0]
 	fmt.Printf("Found release %s\n", asset.ReleaseName)
@@ -87,50 +88,44 @@ func DownloadLatestRelease(major int) error {
 	// Download and install
 	path, err := getFromLink(asset.Binary.Package.Link)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// Update jswap.json file
-	if err = jdk.StoreJDKConfig(jdk.JDKInfo{
+	info := &config.JDKInfo{
 		Vendor:      "adoptium",
 		Major:       asset.Version.Major,
 		Release:     asset.ReleaseName,
 		ReleaseDate: asset.Binary.UpdatedAt,
 		Path:        path,
-	}); err != nil {
-		return err
 	}
-	fmt.Printf("Successfully installed %s\n", asset.ReleaseName)
-	return nil
+	return info, nil
 }
 
 // Downloads a specific JDK release
-func DownloadRelease(name string) error {
+func DownloadRelease(name string) (*config.JDKInfo, error) {
 	// Get release info from api
 	url := fmt.Sprintf("%s/assets/release_name/eclipse/%s?architecture=%s&image_type=jre&os=%s", api, name, system.ARCH, system.OS)
 	release, _, err := web.FetchJson[release](url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(release.Binaries) == 0 {
-		return fmt.Errorf("no binaries available for %s", name)
+		return nil, fmt.Errorf("no binaries available for %s", name)
 	}
 	// Download and install
 	path, err := getFromLink(release.Binaries[0].Package.Link)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	// Update jswap.json file
-	if err = jdk.StoreJDKConfig(jdk.JDKInfo{
+	info := &config.JDKInfo{
 		Vendor:      "adoptium",
 		Major:       release.VersionData.Major,
 		Release:     name,
 		ReleaseDate: release.Binaries[0].UpdatedAt,
 		Path:        path,
-	}); err != nil {
-		return err
 	}
-	fmt.Printf("Successfully installed %s\n", name)
-	return nil
+	return info, nil
 }
 
 func getFromLink(link string) (string, error) {
