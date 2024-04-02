@@ -2,8 +2,6 @@ package util
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/epiefe/jswap/internal/file"
 )
@@ -44,20 +42,7 @@ func UseRelease(name string) error {
 }
 
 func useJDK(jdk *JDKInfo) error {
-	if err := os.MkdirAll(file.CacheDir(), os.ModePerm); err != nil {
-		return err
-	}
-	// Update JAVA_HOME symlink in the most possible atomic way
-	// https://stackoverflow.com/questions/37345844/how-to-overwrite-a-symlink-in-go
-	symlinkPathTmp := filepath.Join(file.CacheDir(), "jdklink.tmp")
-	if err := os.Remove(symlinkPathTmp); err != nil && !os.IsNotExist(err) {
-		return err
-	}
-	if err := os.Symlink(jdk.Path, symlinkPathTmp); err != nil {
-		return err
-	}
-
-	if err := os.Rename(symlinkPathTmp, file.JavaHome()); err != nil {
+	if err := file.Link(jdk.Path, file.JavaHome()); err != nil {
 		return err
 	}
 	fmt.Printf("Now using JDK %d (release %s)\n", jdk.Major, jdk.Release)
