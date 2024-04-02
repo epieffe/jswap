@@ -3,7 +3,7 @@ package cmd
 import (
 	"strconv"
 
-	"github.com/epiefe/jswap/internal/util"
+	"github.com/epiefe/jswap/internal/jdk"
 	"github.com/spf13/cobra"
 )
 
@@ -17,12 +17,12 @@ var useCmd = &cobra.Command{
 		major, err := strconv.Atoi(args[0])
 		if err != nil {
 			// arg is a release name
-			if err := util.UseRelease(args[0]); err != nil {
+			if err := jdk.UseRelease(args[0]); err != nil {
 				return err
 			}
 		} else {
 			// arg is a major integer
-			if err := util.UseMajor(major); err != nil {
+			if err := jdk.UseMajor(major); err != nil {
 				return err
 			}
 		}

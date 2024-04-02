@@ -10,22 +10,22 @@ import (
 
 	"github.com/epiefe/jswap/internal/adoptium/system"
 	"github.com/epiefe/jswap/internal/file"
-	"github.com/epiefe/jswap/internal/util"
+	"github.com/epiefe/jswap/internal/jdk"
 	"github.com/epiefe/jswap/internal/web"
 )
 
 const api = "https://api.adoptium.net/v3"
 
 func PrintLocalReleases(major int) error {
-	config, err := util.ReadJswapConfig()
+	config, err := jdk.ReadJswapConfig()
 	if err != nil {
 		return err
 	}
 	if major > 0 {
-		config.JDKs = slices.DeleteFunc(config.JDKs, func(jdk util.JDKInfo) bool { return jdk.Major != major })
+		config.JDKs = slices.DeleteFunc(config.JDKs, func(info jdk.JDKInfo) bool { return info.Major != major })
 	}
-	for _, jdk := range config.JDKs {
-		fmt.Println(jdk.Release)
+	for _, info := range config.JDKs {
+		fmt.Println(info.Release)
 	}
 	if len(config.JDKs) == 0 {
 		fmt.Println("            N/A")
@@ -36,7 +36,7 @@ func PrintLocalReleases(major int) error {
 // Prints available releases for a specific major. If major is 0,
 // then prints every available release.
 func PrintRemoteReleases(major int) error {
-	config, err := util.ReadJswapConfig()
+	config, err := jdk.ReadJswapConfig()
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func PrintRemoteReleases(major int) error {
 			return err
 		}
 		for _, release := range result.Releases {
-			if slices.ContainsFunc(config.JDKs, func(jdk util.JDKInfo) bool { return jdk.Release == release }) {
+			if slices.ContainsFunc(config.JDKs, func(info jdk.JDKInfo) bool { return info.Release == release }) {
 				release += " [installed]"
 			}
 			fmt.Println(release)
@@ -90,7 +90,7 @@ func DownloadLatestRelease(major int) error {
 		return err
 	}
 	// Update jswap.json file
-	if err = util.StoreJDKConfig(util.JDKInfo{
+	if err = jdk.StoreJDKConfig(jdk.JDKInfo{
 		Vendor:      "adoptium",
 		Major:       asset.Version.Major,
 		Release:     asset.ReleaseName,
@@ -120,7 +120,7 @@ func DownloadRelease(name string) error {
 		return err
 	}
 	// Update jswap.json file
-	if err = util.StoreJDKConfig(util.JDKInfo{
+	if err = jdk.StoreJDKConfig(jdk.JDKInfo{
 		Vendor:      "adoptium",
 		Major:       release.VersionData.Major,
 		Release:     name,

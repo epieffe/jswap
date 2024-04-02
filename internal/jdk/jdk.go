@@ -1,4 +1,4 @@
-package util
+package jdk
 
 import (
 	"fmt"
@@ -11,16 +11,16 @@ func UseMajor(major int) error {
 	if err != nil {
 		return err
 	}
-	var jdk *JDKInfo
+	var info *JDKInfo
 	for _, v := range config.JDKs {
-		if v.Major == major && (jdk == nil || v.ReleaseDate > jdk.ReleaseDate) {
-			jdk = &v
+		if v.Major == major && (info == nil || v.ReleaseDate > info.ReleaseDate) {
+			info = &v
 		}
 	}
-	if jdk == nil {
+	if info == nil {
 		return fmt.Errorf("no installed release found for JDK %d", major)
 	}
-	return useJDK(jdk)
+	return useJDK(info)
 }
 
 func UseRelease(name string) error {
@@ -28,23 +28,23 @@ func UseRelease(name string) error {
 	if err != nil {
 		return err
 	}
-	var jdk *JDKInfo
+	var info *JDKInfo
 	for _, v := range config.JDKs {
 		if v.Release == name {
-			jdk = &v
+			info = &v
 			break
 		}
 	}
-	if jdk == nil {
+	if info == nil {
 		return fmt.Errorf("release %s is not installed", name)
 	}
-	return useJDK(jdk)
+	return useJDK(info)
 }
 
-func useJDK(jdk *JDKInfo) error {
-	if err := file.Link(jdk.Path, file.JavaHome()); err != nil {
+func useJDK(info *JDKInfo) error {
+	if err := file.Link(info.Path, file.JavaHome()); err != nil {
 		return err
 	}
-	fmt.Printf("Now using JDK %d (release %s)\n", jdk.Major, jdk.Release)
+	fmt.Printf("Now using JDK %d (release %s)\n", info.Major, info.Release)
 	return nil
 }

@@ -1,4 +1,4 @@
-package util
+package jdk
 
 import (
 	"encoding/json"
@@ -23,13 +23,13 @@ type JDKInfo struct {
 	Path        string `json:"path"`
 }
 
-func (config *JswapConfig) AddJDK(jdk JDKInfo) {
-	conflict := slices.ContainsFunc(config.JDKs, func(e JDKInfo) bool { return e.Release == jdk.Release })
+func (config *JswapConfig) AddJDK(info JDKInfo) {
+	conflict := slices.ContainsFunc(config.JDKs, func(e JDKInfo) bool { return e.Release == info.Release })
 	if conflict {
-		fmt.Fprintf(os.Stderr, "Warning: release %s was already installed and this will override previous configuration\n", jdk.Release)
-		config.JDKs = slices.DeleteFunc(config.JDKs, func(e JDKInfo) bool { return e.Release == jdk.Release })
+		fmt.Fprintf(os.Stderr, "Warning: release %s was already installed and this will override previous configuration\n", info.Release)
+		config.JDKs = slices.DeleteFunc(config.JDKs, func(e JDKInfo) bool { return e.Release == info.Release })
 	}
-	config.JDKs = append(config.JDKs, jdk)
+	config.JDKs = append(config.JDKs, info)
 }
 
 func (config *JswapConfig) RemoveJDK(release string) {
