@@ -1,10 +1,6 @@
 package adoptium
 
-type releases struct {
-	Releases []string `json:"releases"`
-}
-
-type release struct {
+type Release struct {
 	Binaries      []binary `json:"binaries"`
 	DownloadCount int      `json:"download_count"`
 	ID            string   `json:"id"`
@@ -17,12 +13,16 @@ type release struct {
 	VersionData   version  `json:"version_data"`
 }
 
-type asset struct {
+type Asset struct {
 	ReleaseLink string  `json:"release_link"`
 	ReleaseName string  `json:"release_name"`
 	Vendor      string  `json:"vendor"`
 	Binary      binary  `json:"binary"`
 	Version     version `json:"version"`
+}
+
+type releases struct {
+	Releases []string `json:"releases"`
 }
 
 type binary struct {

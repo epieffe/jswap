@@ -60,20 +60,60 @@ func ListRemote(major int) error {
 // GetLatest downloads and installs the latest JDK
 // release matching a given major
 func GetLatest(major int) error {
-	info, err := adoptium.DownloadLatestRelease(major)
+	conf, err := config.ReadJswapConfig()
 	if err != nil {
 		return err
 	}
-	return installJDK(info)
+	asset, err := adoptium.GetLatestAsset(major)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Found release %s\n", asset.ReleaseName)
+	// Check if release is already installed
+	if err := checkConflict(asset.ReleaseName, conf, false); err != nil {
+		return err
+	}
+	path, err := adoptium.GetFromLink(asset.Binary.Package.Link)
+	if err != nil {
+		return err
+	}
+	return installJDK(&config.JDKInfo{
+		Vendor:      "adoptium",
+		Major:       asset.Version.Major,
+		Release:     asset.ReleaseName,
+		ReleaseDate: asset.Binary.UpdatedAt,
+		Path:        path,
+	})
 }
 
 // GetRelease downloads and installs a specific JDK release.
-func GetRelease(release string) error {
-	info, err := adoptium.DownloadRelease(release)
+func GetRelease(name string) error {
+	conf, err := config.ReadJswapConfig()
 	if err != nil {
 		return err
 	}
-	return installJDK(info)
+	// Check if release is already installed
+	if err := checkConflict(name, conf, false); err != nil {
+		return err
+	}
+	release, err := adoptium.GetRelease(name)
+	if err != nil {
+		return err
+	}
+	if len(release.Binaries) == 0 {
+		return fmt.Errorf("no binaries available for %s", name)
+	}
+	path, err := adoptium.GetFromLink(release.Binaries[0].Package.Link)
+	if err != nil {
+		return err
+	}
+	return installJDK(&config.JDKInfo{
+		Vendor:      "adoptium",
+		Major:       release.VersionData.Major,
+		Release:     name,
+		ReleaseDate: release.Binaries[0].UpdatedAt,
+		Path:        path,
+	})
 }
 
 // UseMajor sets the latest installed release matching
@@ -137,6 +177,13 @@ func installJDK(info *config.JDKInfo) error {
 	if conf.CurrentJDK == nil {
 		// Since current JDK is not set, we use this one
 		useJDK(info, conf)
+	}
+	return nil
+}
+
+func checkConflict(release string, conf *config.JswapConfig, force bool) error {
+	if !force && slices.ContainsFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Release == release }) {
+		return fmt.Errorf("release %s is already installed", release)
 	}
 	return nil
 }
