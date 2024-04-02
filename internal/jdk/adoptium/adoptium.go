@@ -16,23 +16,6 @@ import (
 
 const api = "https://api.adoptium.net/v3"
 
-func PrintLocalReleases(major int) error {
-	conf, err := config.ReadJswapConfig()
-	if err != nil {
-		return err
-	}
-	if major > 0 {
-		conf.JDKs = slices.DeleteFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Major != major })
-	}
-	for _, info := range conf.JDKs {
-		fmt.Println(info.Release)
-	}
-	if len(conf.JDKs) == 0 {
-		fmt.Println("            N/A")
-	}
-	return nil
-}
-
 // Prints available releases for a specific major. If major is 0,
 // then prints every available release.
 func PrintRemoteReleases(major int) error {

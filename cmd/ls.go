@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/epiefe/jswap/internal/jdk/adoptium"
+	"github.com/epiefe/jswap/internal/jdk"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ var lsCmd = &cobra.Command{
 				return errors.New("arg must be an integer")
 			}
 		}
-		if err := adoptium.PrintLocalReleases(major); err != nil {
+		if err := jdk.ListLocal(major); err != nil {
 			return err
 		}
 		return nil
