@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/epiefe/jswap/internal/adoptium"
+	"github.com/epiefe/jswap/internal/jdk/adoptium"
 	"github.com/spf13/cobra"
 )
 

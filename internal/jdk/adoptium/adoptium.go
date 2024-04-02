@@ -8,9 +8,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/epiefe/jswap/internal/adoptium/system"
 	"github.com/epiefe/jswap/internal/file"
 	"github.com/epiefe/jswap/internal/jdk"
+	"github.com/epiefe/jswap/internal/jdk/adoptium/system"
 	"github.com/epiefe/jswap/internal/web"
 )
 
