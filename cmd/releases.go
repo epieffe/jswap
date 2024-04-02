@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strconv"
 
-	"github.com/epiefe/jswap/internal/jdk/adoptium"
+	"github.com/epiefe/jswap/internal/jdk"
 	"github.com/spf13/cobra"
 )
 
@@ -23,7 +23,7 @@ var releasesCmd = &cobra.Command{
 				return errors.New("arg must be an integer")
 			}
 		}
-		if err := adoptium.PrintRemoteReleases(release); err != nil {
+		if err := jdk.ListRemote(release); err != nil {
 			return err
 		}
 		return nil

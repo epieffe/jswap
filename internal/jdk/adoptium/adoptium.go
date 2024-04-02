@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/epiefe/jswap/internal/file"
@@ -16,15 +15,12 @@ import (
 
 const api = "https://api.adoptium.net/v3"
 
-// Prints available releases for a specific major. If major is 0,
-// then prints every available release.
-func PrintRemoteReleases(major int) error {
-	conf, err := config.ReadJswapConfig()
-	if err != nil {
-		return err
-	}
+// ReleaseNames returns all the available releases for a given major.
+// If major is 0 retrieves every available release.
+func ReleaseNames(major int) ([]string, error) {
 	page := 0
 	next := true
+	result := []string{}
 	for next {
 		url := fmt.Sprintf(
 			"%s/info/release_names?architecture=%s&image_type=jre&os=%s&page=%d&page_size=20&release_type=ga&sort_method=DEFAULT&sort_order=ASC&vendor=eclipse",
@@ -33,23 +29,15 @@ func PrintRemoteReleases(major int) error {
 		if major > 0 {
 			url += fmt.Sprintf("&version=[%d,%d)", major, major+1)
 		}
-		result, headers, err := web.FetchJson[releases](url)
+		fetched, headers, err := web.FetchJson[releases](url)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		for _, release := range result.Releases {
-			if slices.ContainsFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Release == release }) {
-				release += " [installed]"
-			}
-			fmt.Println(release)
-		}
+		result = append(result, fetched.Releases...)
 		next = strings.Contains(headers.Get("link"), "rel=\"next\"")
 		page += 1
 	}
-	if page == 0 {
-		fmt.Println("            N/A")
-	}
-	return nil
+	return result, nil
 }
 
 // DownloadLatestRelease downloads the latest JDK release for a specific major

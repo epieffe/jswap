@@ -9,21 +9,50 @@ import (
 	"github.com/epiefe/jswap/internal/jdk/config"
 )
 
-// ListLocal prints all the locally installed JDKs matching a given major.
-// If given major is 0 prints all the installed JDKs.
+// ListLocal prints all the installed JDK releases, matching a given major.
+// If major is 0 prints all the installed JDKs.
 func ListLocal(major int) error {
 	conf, err := config.ReadJswapConfig()
 	if err != nil {
 		return err
 	}
-	if major > 0 {
-		conf.JDKs = slices.DeleteFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Major != major })
-	}
+	none := true
 	for _, info := range conf.JDKs {
-		fmt.Println(info.Release)
+		if major == 0 || info.Major == major {
+			none = false
+			if conf.CurrentJDK != nil && info.Release == conf.CurrentJDK.Release {
+				fmt.Printf("%s [current]\n", info.Release)
+			} else {
+				fmt.Println(info.Release)
+			}
+		}
 	}
-	if len(conf.JDKs) == 0 {
+	if none {
 		fmt.Println("            N/A")
+	}
+	return nil
+}
+
+// ListRemote prints all the JDK releases available to install, matching a
+// given major. If major is zero prints all available releases.
+func ListRemote(major int) error {
+	conf, err := config.ReadJswapConfig()
+	if err != nil {
+		return err
+	}
+	releases, err := adoptium.ReleaseNames(major)
+	if err != nil {
+		return err
+	}
+	if len(releases) == 0 {
+		fmt.Println("            N/A")
+		return nil
+	}
+	for _, release := range releases {
+		if slices.ContainsFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Release == release }) {
+			release += " [installed]"
+		}
+		fmt.Println(release)
 	}
 	return nil
 }
