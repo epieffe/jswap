@@ -6,13 +6,12 @@ import (
 
 	"github.com/epiefe/jswap/internal/file"
 	"github.com/epiefe/jswap/internal/jdk/adoptium"
-	"github.com/epiefe/jswap/internal/jdk/config"
 )
 
 // ListLocal prints all the installed JDK releases, matching a given major.
 // If major is 0 prints all the installed JDKs.
 func ListLocal(major int) error {
-	conf, err := config.ReadJswapConfig()
+	conf, err := readJswapConfig()
 	if err != nil {
 		return err
 	}
@@ -36,7 +35,7 @@ func ListLocal(major int) error {
 // ListRemote prints all the JDK releases available to install, matching a
 // given major. If major is zero prints all available releases.
 func ListRemote(major int) error {
-	conf, err := config.ReadJswapConfig()
+	conf, err := readJswapConfig()
 	if err != nil {
 		return err
 	}
@@ -49,7 +48,7 @@ func ListRemote(major int) error {
 		return nil
 	}
 	for _, release := range releases {
-		if slices.ContainsFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Release == release }) {
+		if slices.ContainsFunc(conf.JDKs, func(info *JDKInfo) bool { return info.Release == release }) {
 			release += " [installed]"
 		}
 		fmt.Println(release)
@@ -60,7 +59,7 @@ func ListRemote(major int) error {
 // GetLatest downloads and installs the latest JDK
 // release matching a given major
 func GetLatest(major int) error {
-	conf, err := config.ReadJswapConfig()
+	conf, err := readJswapConfig()
 	if err != nil {
 		return err
 	}
@@ -77,7 +76,7 @@ func GetLatest(major int) error {
 	if err != nil {
 		return err
 	}
-	return installJDK(&config.JDKInfo{
+	return installJDK(&JDKInfo{
 		Vendor:      "adoptium",
 		Major:       asset.Version.Major,
 		Release:     asset.ReleaseName,
@@ -88,7 +87,7 @@ func GetLatest(major int) error {
 
 // GetRelease downloads and installs a specific JDK release.
 func GetRelease(name string) error {
-	conf, err := config.ReadJswapConfig()
+	conf, err := readJswapConfig()
 	if err != nil {
 		return err
 	}
@@ -107,7 +106,7 @@ func GetRelease(name string) error {
 	if err != nil {
 		return err
 	}
-	return installJDK(&config.JDKInfo{
+	return installJDK(&JDKInfo{
 		Vendor:      "adoptium",
 		Major:       release.VersionData.Major,
 		Release:     name,
@@ -119,11 +118,11 @@ func GetRelease(name string) error {
 // UseMajor sets the latest installed release matching
 // a given major as the current JDK.
 func UseMajor(major int) error {
-	conf, err := config.ReadJswapConfig()
+	conf, err := readJswapConfig()
 	if err != nil {
 		return err
 	}
-	var info *config.JDKInfo
+	var info *JDKInfo
 	for _, v := range conf.JDKs {
 		if v.Major == major && (info == nil || v.ReleaseDate > info.ReleaseDate) {
 			info = v
@@ -137,11 +136,11 @@ func UseMajor(major int) error {
 
 // UseRelease sets a specific JDK release as the current JDK.
 func UseRelease(name string) error {
-	conf, err := config.ReadJswapConfig()
+	conf, err := readJswapConfig()
 	if err != nil {
 		return err
 	}
-	var info *config.JDKInfo
+	var info *JDKInfo
 	for _, v := range conf.JDKs {
 		if v.Release == name {
 			info = v
@@ -154,23 +153,23 @@ func UseRelease(name string) error {
 	return useJDK(info, conf)
 }
 
-func useJDK(info *config.JDKInfo, conf *config.JswapConfig) error {
+func useJDK(info *JDKInfo, conf *JswapConfig) error {
 	if err := file.Link(info.Path, file.JavaHome()); err != nil {
 		return err
 	}
 	fmt.Printf("Now using JDK %d (release %s)\n", info.Major, info.Release)
 	conf.CurrentJDK = info
-	config.WriteJswapConfig(conf)
+	writeJswapConfig(conf)
 	return nil
 }
 
-func installJDK(info *config.JDKInfo) error {
-	conf, err := config.ReadJswapConfig()
+func installJDK(info *JDKInfo) error {
+	conf, err := readJswapConfig()
 	if err != nil {
 		return err
 	}
-	conf.AddJDK(info)
-	if err = config.WriteJswapConfig(conf); err != nil {
+	conf.JDKs = append(conf.JDKs, info)
+	if err = writeJswapConfig(conf); err != nil {
 		return err
 	}
 	fmt.Printf("Successfully installed %s\n", info.Release)
@@ -181,8 +180,8 @@ func installJDK(info *config.JDKInfo) error {
 	return nil
 }
 
-func checkConflict(release string, conf *config.JswapConfig, force bool) error {
-	if !force && slices.ContainsFunc(conf.JDKs, func(info *config.JDKInfo) bool { return info.Release == release }) {
+func checkConflict(release string, conf *JswapConfig, force bool) error {
+	if !force && slices.ContainsFunc(conf.JDKs, func(info *JDKInfo) bool { return info.Release == release }) {
 		return fmt.Errorf("release %s is already installed", release)
 	}
 	return nil
