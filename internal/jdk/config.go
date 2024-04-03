@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"sort"
 
 	"github.com/epiefe/jswap/internal/file"
 )
@@ -46,6 +47,13 @@ func writeJswapConfig(conf *JswapConfig) error {
 		return err
 	}
 	defer file.Close()
+	// Sort jdks
+	sort.Slice(conf.JDKs, func(i, j int) bool {
+		return conf.JDKs[i].Major < conf.JDKs[j].Major ||
+			(conf.JDKs[i].Major == conf.JDKs[j].Major &&
+				conf.JDKs[i].ReleaseDate < conf.JDKs[j].ReleaseDate)
+	})
+	// Save conf to file
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 	err = encoder.Encode(&conf)
