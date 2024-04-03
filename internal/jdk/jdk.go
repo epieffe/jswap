@@ -2,6 +2,7 @@ package jdk
 
 import (
 	"fmt"
+	"os"
 	"slices"
 
 	"github.com/epiefe/jswap/internal/file"
@@ -153,6 +154,33 @@ func UseRelease(name string) error {
 		return fmt.Errorf("release %s is not installed", name)
 	}
 	return useJDK(info, conf)
+}
+
+func RemoveReleases(names ...string) error {
+	conf, err := readJswapConfig()
+	if err != nil {
+		return err
+	}
+	for _, name := range names {
+		i := slices.IndexFunc(conf.JDKs, func(v *JDKInfo) bool { return v.Release == name })
+		if i == -1 {
+			fmt.Fprintf(os.Stderr, "Warning: release %s not found\n", name)
+			continue
+		}
+		if err := os.RemoveAll(conf.JDKs[i].Path); err != nil {
+			return err
+		}
+		if conf.CurrentJDK != nil && conf.JDKs[i].Path == conf.CurrentJDK.Path {
+			conf.CurrentJDK = nil
+			if err := os.RemoveAll(file.JavaHome()); err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %s", err)
+			}
+		}
+		conf.JDKs = slices.Delete(conf.JDKs, i, i+1)
+		writeJswapConfig(conf)
+		fmt.Printf("Removed %s\n", name)
+	}
+	return nil
 }
 
 func useJDK(info *JDKInfo, conf *JswapConfig) error {
