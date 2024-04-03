@@ -69,8 +69,9 @@ func GetLatest(major int) error {
 	}
 	fmt.Printf("Found release %s\n", asset.ReleaseName)
 	// Check if release is already installed
-	if err := checkConflict(asset.ReleaseName, conf, false); err != nil {
-		return err
+	if checkConflict(asset.ReleaseName, conf) {
+		fmt.Printf("Latest JDK %d is already installed\n", major)
+		return nil
 	}
 	path, err := adoptium.GetFromLink(asset.Binary.Package.Link)
 	if err != nil {
@@ -92,8 +93,9 @@ func GetRelease(name string) error {
 		return err
 	}
 	// Check if release is already installed
-	if err := checkConflict(name, conf, false); err != nil {
-		return err
+	if checkConflict(name, conf) {
+		fmt.Printf("release %s is already installed\n", name)
+		return nil
 	}
 	release, err := adoptium.GetRelease(name)
 	if err != nil {
@@ -180,9 +182,8 @@ func installJDK(info *JDKInfo) error {
 	return nil
 }
 
-func checkConflict(release string, conf *JswapConfig, force bool) error {
-	if !force && slices.ContainsFunc(conf.JDKs, func(info *JDKInfo) bool { return info.Release == release }) {
-		return fmt.Errorf("release %s is already installed", release)
-	}
-	return nil
+func checkConflict(release string, conf *JswapConfig) bool {
+	return slices.ContainsFunc(conf.JDKs, func(info *JDKInfo) bool {
+		return info.Release == release
+	})
 }
