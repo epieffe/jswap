@@ -23,9 +23,6 @@ var releasesCmd = &cobra.Command{
 				return errors.New("arg must be an integer")
 			}
 		}
-		if err := jdk.ListRemote(release); err != nil {
-			return err
-		}
-		return nil
+		return jdk.ListRemote(release)
 	},
 }

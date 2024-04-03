@@ -24,8 +24,7 @@ func FetchJson[T any](url string) (*T, http.Header, error) {
 	}
 
 	var result T
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, resp.Header, err
 	}
 

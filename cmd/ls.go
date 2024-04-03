@@ -23,9 +23,6 @@ var lsCmd = &cobra.Command{
 				return errors.New("arg must be an integer")
 			}
 		}
-		if err := jdk.ListLocal(major); err != nil {
-			return err
-		}
-		return nil
+		return jdk.ListLocal(major)
 	},
 }

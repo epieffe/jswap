@@ -17,15 +17,10 @@ var useCmd = &cobra.Command{
 		major, err := strconv.Atoi(args[0])
 		if err != nil {
 			// arg is a release name
-			if err := jdk.UseRelease(args[0]); err != nil {
-				return err
-			}
+			return jdk.UseRelease(args[0])
 		} else {
 			// arg is a major integer
-			if err := jdk.UseMajor(major); err != nil {
-				return err
-			}
+			return jdk.UseMajor(major)
 		}
-		return nil
 	},
 }
