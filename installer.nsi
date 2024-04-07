@@ -44,11 +44,17 @@ Section "Install"
     File jswap.exe
 
     # Add jswap to PATH, only if not present
+    EnVar::SetHKCU
+    DetailPrint "EnVar::SetHKCU"
+    EnVar::AddValue "Path" "$INSTDIR\bin"
     EnVar::AddValue "Path" "$INSTDIR\bin"
     Pop $0
     DetailPrint "Added Jswap to PATH. result=$0"
 
     # Add JDK symlink to PATH, only if not present
+    EnVar::SetHKCU
+    DetailPrint "EnVar::SetHKCU"
+    EnVar::AddValue "Path" "${JAVAHOME}\bin"
     EnVar::AddValue "Path" "${JAVAHOME}\bin"
     Pop $0
     DetailPrint "Added JDK symlink to PATH. result=$0"
@@ -70,11 +76,17 @@ SectionEnd
 Section "Uninstall"
 
     # Delete jswap from PATH, only if present
+    EnVar::SetHKCU
+    DetailPrint "EnVar::SetHKCU"
+    EnVar::DeleteValue "Path" "$INSTDIR\bin"
     EnVar::DeleteValue "Path" "$INSTDIR\bin"
     Pop $0
     DetailPrint "Removed Jswap from PATH. result=$0"
 
     # Delete JDK symlink from PATH, only if present
+    EnVar::SetHKCU
+    DetailPrint "EnVar::SetHKCU"
+    EnVar::DeleteValue "Path" "${JAVAHOME}\bin"
     EnVar::DeleteValue "Path" "${JAVAHOME}\bin"
     Pop $0
     DetailPrint "Removed JDK symlink from PATH. result=$0"
