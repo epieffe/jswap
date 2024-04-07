@@ -16,6 +16,7 @@ InstallDir $LocalAppData\Jswap
 
 !define DATAFOLDER $LocalAppData\Jswap
 !define JAVAHOME ${DATAFOLDER}\current-jdk
+!define REMOVEKEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\Jswap"
 
 # License page
 LicenseData LICENSE
@@ -69,6 +70,10 @@ Section "Install"
     # Create uninstaller
     WriteUninstaller $INSTDIR\uninstall.exe
 
+    # Create registry key to add entry in the "Add/Remove Programs" section in the Control Panel
+    WriteRegStr HKCU "${REMOVEKEY}" "DisplayName" "Jswap"
+    WriteRegStr HKCU "${REMOVEKEY}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+
 SectionEnd
 
 
@@ -102,6 +107,9 @@ Section "Uninstall"
 
     # Make sure Windows knows about the environment change
     SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+
+    # Remove registry key
+    DeleteRegKey HKCU "${REMOVEKEY}"
 
     # Delete installation files
     Delete /REBOOTOK $INSTDIR\bin\jswap.exe
