@@ -24,7 +24,7 @@ type JDKInfo struct {
 }
 
 func readJswapConfig() (*JswapConfig, error) {
-	file, err := os.Open(filepath.Join(file.JswapHome(), "jswap.json"))
+	file, err := os.Open(filepath.Join(file.JswapData(), "jswap.json"))
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return &JswapConfig{JDKs: []*JDKInfo{}}, nil
@@ -42,7 +42,7 @@ func readJswapConfig() (*JswapConfig, error) {
 }
 
 func writeJswapConfig(conf *JswapConfig) error {
-	file, err := os.Create(filepath.Join(file.JswapHome(), "jswap.json"))
+	file, err := os.Create(filepath.Join(file.JswapData(), "jswap.json"))
 	if err != nil {
 		return err
 	}

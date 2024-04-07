@@ -68,7 +68,7 @@ func GetRelease(name string) (*Release, error) {
 
 func GetFromLink(link string) (string, error) {
 	// Download release archive
-	cacheDir := file.CacheDir()
+	cacheDir := file.TempDir()
 	defer os.RemoveAll(cacheDir)
 	archive, err := web.DownloadFile(link, filepath.Join(cacheDir, "archive"))
 	if err != nil {
@@ -92,7 +92,7 @@ func GetFromLink(link string) (string, error) {
 	extractedPath := filepath.Join(extractDir, name)
 
 	// Create adoptium folder if it does not exist
-	jdkDir := filepath.Join(file.JswapHome(), "jdks", "adoptium")
+	jdkDir := filepath.Join(file.JswapData(), "jdks", "adoptium")
 	if err = os.MkdirAll(jdkDir, os.ModePerm); err != nil {
 		return "", err
 	}

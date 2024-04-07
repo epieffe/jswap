@@ -27,10 +27,10 @@ func Link(oldname, newname string) error {
 }
 
 func link(oldname, newname string) error {
-	if err := os.MkdirAll(CacheDir(), os.ModePerm); err != nil {
+	if err := os.MkdirAll(TempDir(), os.ModePerm); err != nil {
 		return err
 	}
-	symlinkPathTmp := filepath.Join(CacheDir(), "jdklink.tmp")
+	symlinkPathTmp := filepath.Join(TempDir(), "jdklink.tmp")
 	if err := os.RemoveAll(symlinkPathTmp); err != nil {
 		return err
 	}

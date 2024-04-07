@@ -4,25 +4,33 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 )
 
 func JavaHome() string {
-	return filepath.Join(JswapHome(), "current-jdk")
+	return filepath.Join(JswapData(), "current-jdk")
 }
 
-func JswapHome() string {
-	dir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Fatal error: %s\n", err)
-		os.Exit(1)
-	}
-	return filepath.Join(dir, ".jswap")
+func TempDir() string {
+	return filepath.Join(JswapData(), "tmp")
 }
 
-func CacheDir() string {
-	dir, err := os.UserCacheDir()
-	if err != nil {
-		dir = filepath.Join(JswapHome(), ".cache")
+func JswapData() string {
+	switch runtime.GOOS {
+	case "windows":
+		localAppData := os.Getenv("LocalAppData")
+		if localAppData == "" {
+			fmt.Fprintln(os.Stderr, "Fatal error: %LocalAppData% is not defined")
+			os.Exit(1)
+		}
+		return filepath.Join(localAppData, "Jswap")
+
+	default:
+		dir, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Fatal error: %s\n", err)
+			os.Exit(1)
+		}
+		return filepath.Join(dir, ".jswap")
 	}
-	return filepath.Join(dir, "jswap")
 }
