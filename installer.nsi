@@ -8,7 +8,7 @@
 RequestExecutionLevel user
 
 Name Jswap
-Outfile "jswap-setup.exe"
+Outfile "build\win-amd64\jswap-setup.exe"
 
 # By default Jswap is installed in the same folder where it stores data,
 # but the user might change the installation directory during setup.
@@ -42,7 +42,7 @@ Section "Install"
 
     # Copy jswap.exe to install folder
     SetOutPath $INSTDIR\bin
-    File jswap.exe
+    File build\win-amd64\jswap.exe
 
     # Add jswap to PATH, only if not present
     EnVar::SetHKCU
