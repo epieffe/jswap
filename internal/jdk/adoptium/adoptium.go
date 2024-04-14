@@ -14,6 +14,8 @@ import (
 
 const api = "https://api.adoptium.net/v3"
 
+const imageType = "jdk"
+
 // ReleaseNames returns all the available releases for a given major.
 // If major is 0 retrieves every available release.
 func ReleaseNames(major int) ([]string, error) {
@@ -22,8 +24,8 @@ func ReleaseNames(major int) ([]string, error) {
 	result := []string{}
 	for next {
 		url := fmt.Sprintf(
-			"%s/info/release_names?architecture=%s&image_type=jre&os=%s&page=%d&page_size=20&release_type=ga&sort_method=DEFAULT&sort_order=ASC&vendor=eclipse",
-			api, system.ARCH, system.OS, page,
+			"%s/info/release_names?architecture=%s&os=%s&image_type=%s&page=%d&page_size=20&release_type=ga&sort_method=DEFAULT&sort_order=ASC&vendor=eclipse",
+			api, system.ARCH, system.OS, imageType, page,
 		)
 		if major > 0 {
 			url += fmt.Sprintf("&version=[%d,%d)", major, major+1)
@@ -44,7 +46,7 @@ func ReleaseNames(major int) ([]string, error) {
 func GetLatestAsset(major int) (*Asset, error) {
 	// Get latest release info from api
 	fmt.Printf("Searching latest JDK %d for %s %s\n", major, system.OS, system.ARCH)
-	url := fmt.Sprintf("%s/assets/latest/%d/hotspot?architecture=%s&image_type=jre&os=%s&vendor=eclipse", api, major, system.ARCH, system.OS)
+	url := fmt.Sprintf("%s/assets/latest/%d/hotspot?architecture=%s&os=%s&image_type=%s&vendor=eclipse", api, major, system.ARCH, system.OS, imageType)
 	assets, _, err := web.FetchJson[[]Asset](url)
 	if err != nil {
 		return nil, err
@@ -58,7 +60,7 @@ func GetLatestAsset(major int) (*Asset, error) {
 // GetRelease returns information about a specific JDK release.
 func GetRelease(name string) (*Release, error) {
 	// Get release info from api
-	url := fmt.Sprintf("%s/assets/release_name/eclipse/%s?architecture=%s&image_type=jre&os=%s", api, name, system.ARCH, system.OS)
+	url := fmt.Sprintf("%s/assets/release_name/eclipse/%s?architecture=%s&os=%s&image_type=%s", api, name, system.ARCH, system.OS, imageType)
 	release, _, err := web.FetchJson[Release](url)
 	if err != nil {
 		return nil, err
