@@ -1,5 +1,7 @@
-VERSION = 0.0.1
-GOFLAGS = -ldflags="-X 'github.com/epiefe/jswap/cmd.version=$(VERSION)'"
+VERSION = $(shell git describe --tags --abbrev=0 2>/dev/null || echo v0.0.0)
+COMMIT := $(shell git rev-list --abbrev-commit --all --max-count=1)
+
+GOFLAGS = -ldflags="-X 'github.com/epiefe/jswap/cmd.version=$(VERSION) (commit $(COMMIT))'"
 
 .PHONY: build
 build:
