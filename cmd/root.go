@@ -6,9 +6,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var version string
+
 var rootCmd = &cobra.Command{
-	Use:   "jswap [<command>] [<flags>]",
-	Short: "Download and manage multiple JDK releases.",
+	Use:     "jswap [<command>] [<flags>]",
+	Short:   "Download and manage multiple JDK releases.",
+	Version: version,
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
