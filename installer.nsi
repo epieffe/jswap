@@ -8,7 +8,7 @@
 RequestExecutionLevel user
 
 Name Jswap
-Outfile "build\win-amd64\jswap-setup.exe"
+Outfile "build\win-amd64\jswap-${VERSION}-setup.exe"
 
 # By default Jswap is installed in the same folder where it stores data,
 # but the user might change the installation directory during setup.

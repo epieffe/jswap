@@ -18,7 +18,7 @@ win-amd64:
 	GOOS=windows GOARCH=amd64 go build $(GOFLAGS) -o build/win-amd64/ jswap.go
 
 win-installer: win-amd64
-	makensis installer.nsi
+	makensis -Dversion=$(VERSION) installer.nsi
 
 all: linux-amd64 mac-amd64 mac-arm64 win-installer
 
