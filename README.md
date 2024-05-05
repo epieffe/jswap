@@ -1,9 +1,7 @@
 # Jswap
-Jswap allows you to quickly download and use different versions of the Java JDK via the command line.
+Jswap allows you to quickly download and switch between different versions of the Java JDK via the command line. It works on Windows, Linux and macOS and does not require admin permissions.
 
-It works on Windows, Linux and macOS and does not require admin permissions.
-
-Jswap uses the the official [Adoptium API](https://api.adoptium.net/) to download the [Eclipse Temurin](https://adoptium.net) distribution of OpenJDK.
+Jswap uses the the [Adoptium API](https://api.adoptium.net/) to download the [Eclipse Temurin](https://adoptium.net) distribution of OpenJDK.
 
 ## Installation
 Prebuilt binaries for Windows, Linux and macOS can be downloaded from the [Releases](https://github.com/epieffe/jswap/releases) page.
@@ -35,27 +33,77 @@ This will make Jswap available only in the Bash shell and will not touch the Win
     ```
 
 ## Usage
-To download and install the latest available release of a given JDK major do this:
+Download and install the latest available release of a given JDK major:
 ```bash
 jswap get 21
 ```
-To download and install a specific JDK release:
-```bash
-jswap get jdk-21.0.2+13
-```
-To list all the JDK releases available for download:
-```bash
-jswap releases
-```
-To use the latest installed release of a given major:
+
+Modify PATH and JAVA_HOME to use the latest installed release of a given major:
 ```bash
 jswap use 21
 ```
-To use a specific installed release:
-```bash
-jswap use jdk-21.0.2+13
-```
-To list all the installed JDKs:
+
+List all the installed JDKs:
 ```bash
 jswap ls
+```
+
+Run `jswap --help` for more information.
+
+## Build from sources
+To build the Jswap executable from sources you need the following dependencies:
+- Go
+- Make
+- Git
+
+To build Jswap for your OS and architecture run this:
+```bash
+make build
+```
+
+You can also target different platforms:
+```bash
+make linux-amd64 # Linux x64
+make win-amd64 # Windows x64
+make mac-amd64 # macOS with Intel CPU
+make mac-arm64 # macOS with ARM CPU
+```
+
+The executables will be found in the `build` directory.
+
+### Windows installer
+To build the Windows installer you need [NSIS](https://nsis.sourceforge.io/Main_Page) and the [EnVar plugin for NSIS](https://nsis.sourceforge.io/EnVar_plug-in).
+
+NSIS is also available on Linux and can be easily installed via apt on Ubuntu and Debian:
+```bash
+sudo apt install nsis
+```
+Place the EnVar plugin dll files in `/usr/share/nsis/Plugins`.
+
+Run the following command to build the Jswap Windows installer:
+```bash
+make win-installer
+```
+
+### Build using Docker
+You can build Jswap and the Windows installer for any supported platform using Docker, without any other dependency.
+
+First, build the `jswap-builder` Docker image:
+```bash
+docker build -t jswap-builder .
+```
+
+Run the following command to create a Docker container that builds Jswap and the Windows installer for all the supported platforms from the sources in the current directory:
+```bash
+docker run -v $PWD:/app --name jswap-builder jswap-builder
+```
+
+The `jswap-builder` image runs the Make target `all` by default. If you want to run a different Make target you can pass it as a command to `docker run`. For example, if you want to build only the Windows installer run this:
+```bash
+docker run -v $PWD:/app --name jswap-builder jswap-builder win-installer
+```
+
+For subsequent builds you can reuse the previously created container to improve build times:
+```bash
+docker start -a jswap-builder
 ```
