@@ -26,6 +26,7 @@ Function checkJavaHome
     # Warn the user if JAVA_HOME environment variable is already set
     ReadEnvStr $0 "JAVA_HOME"
     StrCmp $0 "" continue
+    StrCmp $0 ${JAVAHOME} continue
     MessageBox MB_OKCANCEL|MB_ICONEXCLAMATION "Warning: the JAVA_HOME environment variable is already set on your system, installing Jswap will override it." IDOK continue IDCANCEL abort
     abort:
         Quit
