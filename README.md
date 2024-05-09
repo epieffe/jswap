@@ -58,7 +58,7 @@ To build the Jswap executable from sources you need the following dependencies:
 
 To build Jswap for your OS and architecture run this:
 ```bash
-make build
+make
 ```
 
 You can also target different platforms:
