@@ -40,7 +40,7 @@ jswap get 21
 
 Modify PATH and JAVA_HOME to use the latest installed release of a given major:
 ```bash
-jswap use 21
+jswap set 21
 ```
 
 List all the installed JDKs:

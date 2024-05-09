@@ -30,7 +30,7 @@ func init() {
 
 	rootCmd.SetUsageTemplate(USAGE_TEMPLATE)
 
-	rootCmd.AddCommand(lsCmd, releasesCmd, getCmd, useCmd, rmCmd)
+	rootCmd.AddCommand(lsCmd, releasesCmd, getCmd, setCmd, rmCmd)
 	disableFlagsInUseline(rootCmd)
 }
 

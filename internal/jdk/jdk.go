@@ -118,9 +118,9 @@ func GetRelease(name string) error {
 	})
 }
 
-// UseMajor sets the latest installed release matching
+// SetMajor sets the latest installed release matching
 // a given major as the current JDK.
-func UseMajor(major int) error {
+func SetMajor(major int) error {
 	conf, err := readJswapConfig()
 	if err != nil {
 		return err
@@ -134,11 +134,11 @@ func UseMajor(major int) error {
 	if info == nil {
 		return fmt.Errorf("no installed release found for JDK %d", major)
 	}
-	return useJDK(info, conf)
+	return setJDK(info, conf)
 }
 
-// UseRelease sets a specific JDK release as the current JDK.
-func UseRelease(name string) error {
+// SetRelease sets a specific JDK release as the current JDK.
+func SetRelease(name string) error {
 	conf, err := readJswapConfig()
 	if err != nil {
 		return err
@@ -153,7 +153,7 @@ func UseRelease(name string) error {
 	if info == nil {
 		return fmt.Errorf("release %s is not installed", name)
 	}
-	return useJDK(info, conf)
+	return setJDK(info, conf)
 }
 
 func RemoveReleases(names ...string) error {
@@ -183,7 +183,7 @@ func RemoveReleases(names ...string) error {
 	return nil
 }
 
-func useJDK(info *JDKInfo, conf *JswapConfig) error {
+func setJDK(info *JDKInfo, conf *JswapConfig) error {
 	if err := file.Link(info.Path, file.JavaHome()); err != nil {
 		return err
 	}
@@ -205,7 +205,7 @@ func installJDK(info *JDKInfo) error {
 	fmt.Printf("Successfully installed %s\n", info.Release)
 	if conf.CurrentJDK == nil {
 		// Since current JDK is not set, we use this one
-		useJDK(info, conf)
+		setJDK(info, conf)
 	}
 	return nil
 }
