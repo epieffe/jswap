@@ -167,16 +167,22 @@ func RemoveReleases(names ...string) error {
 			fmt.Fprintf(os.Stderr, "Warning: release %s not found\n", name)
 			continue
 		}
-		if err := os.RemoveAll(conf.JDKs[i].Path); err != nil {
+		info := conf.JDKs[i]
+		conf.JDKs = slices.Delete(conf.JDKs, i, i+1)
+		// Update major symlink before deleting files so it never points
+		// to a non-existent directory
+		if err := updateMajorLink(info.Major, conf); err != nil {
 			return err
 		}
-		if conf.CurrentJDK != nil && conf.JDKs[i].Path == conf.CurrentJDK.Path {
+		if err := os.RemoveAll(info.Path); err != nil {
+			return err
+		}
+		if conf.CurrentJDK != nil && info.Path == conf.CurrentJDK.Path {
 			conf.CurrentJDK = nil
 			if err := os.RemoveAll(fsutil.JavaHome()); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %s", err)
 			}
 		}
-		conf.JDKs = slices.Delete(conf.JDKs, i, i+1)
 		writeJswapConfig(conf)
 		fmt.Printf("Removed %s\n", name)
 	}
@@ -202,11 +208,32 @@ func installJDK(info *JDKInfo) error {
 	if err = writeJswapConfig(conf); err != nil {
 		return err
 	}
+	if err = updateMajorLink(info.Major, conf); err != nil {
+		return err
+	}
 	fmt.Printf("Successfully installed %s\n", info.Release)
 	if conf.CurrentJDK == nil {
 		// Since current JDK is not set, we use this one
 		setJDK(info, conf)
 	}
+	return nil
+}
+
+func updateMajorLink(major int, conf *JswapConfig) error {
+	var latest *JDKInfo
+	for _, v := range conf.JDKs {
+		if v.Major == major && (latest == nil || v.ReleaseDate > latest.ReleaseDate) {
+			latest = v
+		}
+	}
+	majorHome := fsutil.JavaMajorHome(major)
+	if latest == nil {
+		return os.RemoveAll(majorHome)
+	}
+	if err := fsutil.Link(latest.Path, majorHome); err != nil {
+		return err
+	}
+	fmt.Printf("java-%d -> %s\n", major, latest.Release)
 	return nil
 }
 

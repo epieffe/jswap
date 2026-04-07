@@ -11,6 +11,10 @@ func JavaHome() string {
 	return filepath.Join(JswapData(), "current-jdk")
 }
 
+func JavaMajorHome(major int) string {
+	return filepath.Join(JswapData(), fmt.Sprintf("java-%d", major))
+}
+
 func TempDir() string {
 	return filepath.Join(JswapData(), "tmp")
 }
