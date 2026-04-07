@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/epiefe/jswap/internal/file"
-	"github.com/epiefe/jswap/internal/jdk/adoptium/system"
-	"github.com/epiefe/jswap/internal/web"
+	"github.com/epiefe/jswap/adoptium/system"
+	"github.com/epiefe/jswap/fsutil"
+	"github.com/epiefe/jswap/web"
 )
 
 const api = "https://api.adoptium.net/v3"
@@ -70,7 +70,7 @@ func GetRelease(name string) (*Release, error) {
 
 func GetFromLink(link string) (string, error) {
 	// Download release archive
-	cacheDir := file.TempDir()
+	cacheDir := fsutil.TempDir()
 	defer os.RemoveAll(cacheDir)
 	archive, err := web.DownloadFile(link, filepath.Join(cacheDir, "archive"))
 	if err != nil {
@@ -80,7 +80,7 @@ func GetFromLink(link string) (string, error) {
 	// Extract archive
 	fmt.Println("Extracting archive...")
 	extractDir := filepath.Join(cacheDir, "extracted")
-	if err := file.ExtractArchive(archive, extractDir); err != nil {
+	if err := fsutil.ExtractArchive(archive, extractDir); err != nil {
 		return "", err
 	}
 	entries, err := os.ReadDir(extractDir)
@@ -94,7 +94,7 @@ func GetFromLink(link string) (string, error) {
 	extractedPath := filepath.Join(extractDir, name)
 
 	// Create adoptium folder if it does not exist
-	jdkDir := filepath.Join(file.JswapData(), "jdks", "adoptium")
+	jdkDir := filepath.Join(fsutil.JswapData(), "jdks", "adoptium")
 	if err = os.MkdirAll(jdkDir, os.ModePerm); err != nil {
 		return "", err
 	}

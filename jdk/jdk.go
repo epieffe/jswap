@@ -5,8 +5,8 @@ import (
 	"os"
 	"slices"
 
-	"github.com/epiefe/jswap/internal/file"
-	"github.com/epiefe/jswap/internal/jdk/adoptium"
+	"github.com/epiefe/jswap/adoptium"
+	"github.com/epiefe/jswap/fsutil"
 )
 
 // ListLocal prints all the installed JDK releases, matching a given major.
@@ -172,7 +172,7 @@ func RemoveReleases(names ...string) error {
 		}
 		if conf.CurrentJDK != nil && conf.JDKs[i].Path == conf.CurrentJDK.Path {
 			conf.CurrentJDK = nil
-			if err := os.RemoveAll(file.JavaHome()); err != nil {
+			if err := os.RemoveAll(fsutil.JavaHome()); err != nil {
 				fmt.Fprintf(os.Stderr, "Error: %s", err)
 			}
 		}
@@ -184,7 +184,7 @@ func RemoveReleases(names ...string) error {
 }
 
 func setJDK(info *JDKInfo, conf *JswapConfig) error {
-	if err := file.Link(info.Path, file.JavaHome()); err != nil {
+	if err := fsutil.Link(info.Path, fsutil.JavaHome()); err != nil {
 		return err
 	}
 	fmt.Printf("Now using JDK %d (release %s)\n", info.Major, info.Release)
